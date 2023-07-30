@@ -1,0 +1,216 @@
+CREATE TABLE employee (
+  emp_id INT PRIMARY KEY,
+  emp_name VARCHAR(100),
+  dept_id INT,
+  type_of_work VARCHAR(20),
+  hourly_rate DECIMAL(10, 2) CHECK (
+    (type_of_work = 'part time' AND hourly_rate >= 25 AND hourly_rate <= 60) OR
+    (type_of_work = 'full time' AND hourly_rate >= 0)
+  )
+);
+-- Create the dept table
+CREATE TABLE dept (
+  dept_id INT PRIMARY KEY,
+  dept_name VARCHAR(100),
+  dept_location VARCHAR(100)
+);
+
+-- Create the address table
+CREATE TABLE address (
+  emp_id INT PRIMARY KEY,
+  street_no VARCHAR(100),
+  street_name VARCHAR(100),
+  city VARCHAR(100),
+  zip_code VARCHAR(10),
+  FOREIGN KEY (emp_id) REFERENCES employee(emp_id)
+);
+
+-- Create the project table
+CREATE TABLE project (
+  project_id INT PRIMARY KEY,
+  project_name VARCHAR(100),
+  project_location VARCHAR(100)
+);
+
+-- Create the ft_pt_work table
+CREATE TABLE ft_pt_work (
+  project_id INT,
+  emp_id INT,
+  dept_id INT,
+  num_of_hours DECIMAL(10, 2),
+  FOREIGN KEY (emp_id) REFERENCES employee(emp_id),
+  FOREIGN KEY (dept_id) REFERENCES dept(dept_id),
+  FOREIGN KEY (project_id) REFERENCES project(project_id)
+);
+
+-- Create the salary table without the CHECK constraint on the basic column
+CREATE TABLE salary (
+  emp_no INT PRIMARY KEY,
+  basic DECIMAL(10, 2),
+  allowance DECIMAL(10, 2) GENERATED ALWAYS AS (0.45 * basic) STORED,
+  deduction DECIMAL(10, 2) GENERATED ALWAYS AS ((0.09 * basic) + (0.25 * basic)) STORED,
+  net_salary DECIMAL(10, 2) GENERATED ALWAYS AS (basic + allowance - deduction) STORED,
+  salary_date DATE,
+  FOREIGN KEY (emp_no) REFERENCES employee(emp_id)
+);
+
+DELIMITER //
+
+CREATE TRIGGER check_full_time_employee_basic
+BEFORE INSERT ON salary
+FOR EACH ROW
+BEGIN
+    DECLARE emp_type VARCHAR(20);
+
+    SELECT type_of_work INTO emp_type
+    FROM employee
+    WHERE emp_id = NEW.emp_no;
+
+    IF emp_type = 'full time' AND NEW.basic < 5000 THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Basic salary for full-time employees must be at least 5000.';
+    END IF;
+END//
+
+DELIMITER ;
+
+
+
+
+
+INSERT INTO employee (emp_id, emp_name, dept_id, type_of_work, hourly_rate)
+VALUES
+  (1, 'John Doe', 1, 'full time', 60),
+  (2, 'Jane Smith', 2, 'part time', 35),
+  (3, 'Michael Johnson', 1, 'full time', 70),
+  (4, 'Emily Davis', 3, 'part time', 50),
+  (5, 'David Wilson', 1, 'full time', 90),
+  (6, 'Sarah Brown', 2, 'part time', 40),
+  (7, 'Robert Taylor', 1, 'full time', 75),
+  (8, 'Olivia Miller', 3, 'part time', 45),
+  (9, 'Daniel Anderson', 1, 'full time', 60),
+  (10, 'Sophia Martinez', 2, 'part time', 55);
+
+
+INSERT INTO dept (dept_id, dept_name, dept_location)
+VALUES
+  (1, 'Engineering', 'New York'),
+  (2, 'Foreman', 'Chicago'),
+  (3, 'Labor', 'Canberra');
+
+
+INSERT INTO address (emp_id, street_no, street_name, city, zip_code)
+VALUES
+  (1, '123', 'Main Street', 'New York', '12345'),
+  (2, '456', 'Oak Avenue', 'San Francisco', '23456'),
+  (3, '789', 'Maple Lane', 'Los Angeles', '34567'),
+  (4, '987', 'Cedar Road', 'Seattle', '45678'),
+  (5, '654', 'Elm Street', 'Chicago', '56789'),
+  (6, '321', 'Pine Avenue', 'Houston', '67890'),
+  (7, '135', 'Birch Lane', 'Miami', '78901'),
+  (8, '531', 'Spruce Road', 'Boston', '89012'),
+  (9, '246', 'Ash Street', 'Atlanta', '90123'),
+  (10, '642', 'Willow Avenue', 'Denver', '01234');
+
+
+INSERT INTO project (project_id, project_name, project_location)
+VALUES
+  (1, 'Googong Subdivision', 'Googong City'),
+  (2, 'Burton Highway', 'Burton Canberra'),
+  (3, 'Roads and Highway', 'Los Angeles');
+
+
+INSERT INTO ft_pt_work (project_id, emp_id, dept_id, num_of_hours)
+VALUES
+  (1, 1, 1, 100),
+  (1, 2, 1, 48),
+  (1, 3, 2, 108),
+  (1, 4, 2, 45),
+  (1, 5, 3, 105),
+  (1, 6, 3, 40),
+  (2, 7, 1, 110),
+  (2, 8, 1, 48),
+  (2, 9, 2, 104),
+  (2, 10, 2, 45),
+  (2, 1, 3, 105),
+  (2, 4, 3, 40),
+  (3, 3, 3, 103),
+  (3, 2, 2, 42),
+  (3, 5, 1, 101),
+  (3, 6, 2, 47),
+  (3, 7, 2, 106)
+  ;
+INSERT INTO salary(emp_no,basic,salary_date)VALUES
+(1,10000,'2023-07-01'),
+(3,9000,'2023-07-01'),
+(5,6000,'2023-07-01'),
+(7,80000,'2023-07-01'),
+(9,70000,'2023-07-01'),
+(2,2000,'2023-07-01'),
+(4,2500,'2023-07-01'),
+(6,3000,'2023-07-01'),
+(8,2200,'2023-07-01'),
+(10,2700,'2023-07-01');
+
+SQL_1:
+
+
+SELECT e.emp_id, e.emp_name, p.project_name, p.project_location, d.dept_name
+FROM employee e
+JOIN ft_pt_work fpw ON e.emp_id = fpw.emp_id
+JOIN project p ON fpw.project_id = p.project_id
+JOIN dept d ON e.dept_id = d.dept_id
+WHERE e.dept_id = (
+    SELECT dept_id
+    FROM dept
+    WHERE dept_name = 'Engineering'
+  )
+  AND p.project_name = 'Googong Subdivision'
+  AND p.project_location = 'Googong city';
+
+SQL-2:
+
+
+SELECT e.emp_name, e.emp_id, d.dept_name, p.project_name, fpw.num_of_hours
+FROM employee e
+JOIN ft_pt_work fpw ON e.emp_id = fpw.emp_id
+JOIN dept d ON e.dept_id = d.dept_id
+JOIN project p ON fpw.project_id = p.project_id
+WHERE d.dept_name = 'Labor'
+  AND p.project_name = 'Googong Subdivision'
+  AND p.project_location = 'Googong city'
+  AND fpw.num_of_hours > 20;
+
+SQL-3.
+
+SELECT e.emp_id, e.emp_name, ad.city AS emp_address, p.project_location, d.dept_location AS dept_address
+FROM employee e
+JOIN ft_pt_work fpw ON e.emp_id = fpw.emp_id
+JOIN project p ON fpw.project_id = p.project_id
+JOIN address ad ON e.emp_id = ad.emp_id
+JOIN dept d ON e.dept_id = d.dept_id
+WHERE p.project_location = 'Burton Canberra'
+  AND d.dept_location != 'Canberra';
+
+SQL-4:
+
+SELECT e.emp_id, e.emp_name, d.dept_name
+FROM employee e
+JOIN ft_pt_work fpw ON e.emp_id = fpw.emp_id
+JOIN project p ON fpw.project_id = p.project_id
+JOIN dept d ON e.dept_id = d.dept_id
+WHERE p.project_name IN ('Googong Subdivision', 'Burton Highway')
+GROUP BY e.emp_id, e.emp_name, d.dept_name
+HAVING COUNT(DISTINCT p.project_id) = 2;
+
+SQL-5.
+
+CREATE VIEW employee_salary_view AS
+SELECT e.emp_id,e.emp_name,  d.dept_name, e.type_of_work, s.basic, s.deduction, s.net_salary
+FROM employee e
+JOIN dept d ON e.dept_id = d.dept_id
+JOIN salary s ON e.emp_id = s.emp_no
+ORDER BY e.emp_id ASC;
+
+
+

@@ -1,0 +1,171 @@
+-- Create Student table with constraints
+CREATE TABLE Student (
+    Stud_no VARCHAR(10) PRIMARY KEY,
+    Stud_name VARCHAR(50) NOT NULL,
+    CONSTRAINT chk_Stud_no CHECK (Stud_no LIKE 'C%')
+);
+
+-- Create Membership table
+CREATE TABLE Membership (
+    Mem_no VARCHAR(10) PRIMARY KEY,
+    Stud_no VARCHAR(10) NOT NULL,
+    CONSTRAINT fk_Stud_no FOREIGN KEY (Stud_no) REFERENCES Student(Stud_no)
+);
+
+-- Create Book table
+CREATE TABLE Book (
+    Book_no VARCHAR(10) PRIMARY KEY,
+    Book_name VARCHAR(50) NOT NULL,
+    Author VARCHAR(50) NOT NULL
+);
+
+-- Create Iss_rec table with default value constraint for iss_date
+CREATE TABLE Iss_rec (
+    Iss_no INTEGER PRIMARY KEY,
+    Iss_date DATE DEFAULT CURRENT_DATE,
+    Mem_no VARCHAR(10) NOT NULL,
+    Book_no VARCHAR(10) NOT NULL,
+    CONSTRAINT fk_Mem_no FOREIGN KEY (Mem_no) REFERENCES Membership(Mem_no),
+    CONSTRAINT fk_Book_no FOREIGN KEY (Book_no) REFERENCES Book(Book_no)
+);
+
+INSERT INTO Student (Stud_no, Stud_name) VALUES
+    ('C001', 'John Doe'),
+    ('C033002', 'Jane Smith'),
+    ('C003', 'Michael Johnson'),
+    ('C004', 'Emily Brown'),
+    ('C005', 'David Lee'),
+    ('C006', 'Sarah Wilson'),
+    ('C007', 'Robert Davis'),
+    ('C008', 'Jessica Miller'),
+    ('C009', 'William Taylor'),
+    ('C010', 'Megan Anderson');
+
+INSERT INTO Membership (Mem_no, Stud_no) VALUES
+    ('M001', 'C001'),
+    ('M002', 'C033002'),
+    ('M003', 'C003'),
+    ('M004', 'C004'),
+    ('M005', 'C005'),
+    ('M006', 'C006'),
+    ('M007', 'C007'),
+    ('M008', 'C008'),
+    ('M009', 'C009'),
+    ('M010', 'C010');
+
+
+INSERT INTO Book (Book_no, Book_name, Author) VALUES
+    ('B001', 'Introduction to SQL', 'James Smith'),
+    ('B002', 'Computer Networks', 'Tanenbum'),
+    ('B003', 'Programming in Python', 'Michael Williams'),
+    ('B004', 'Web Development Basics', 'Jennifer Brown'),
+    ('B005', 'Artificial Intelligence', 'David Lee'),
+    ('B006', 'Operationg System', 'Tanenbum'),
+    ('B007', 'Java Programming', 'Robert Davis'),
+    ('B008', 'C++ Fundamentals', 'Jessica Miller'),
+    ('B009', 'Distributed Systems', 'Tanenbum'),
+    ('B010', 'Machine Learning', 'Megan Anderson');
+
+
+INSERT INTO Iss_rec (Iss_no, Mem_no, Book_no) VALUES
+    (1, 'M001', 'B001'),
+    (2, 'M002', 'B002'),
+    (3, 'M003', 'B003'),
+    (4, 'M004', 'B004'),
+    (5, 'M005', 'B005'),
+    (6, 'M009', 'B006'),
+    (7, 'M007', 'B007'),
+    (8, 'M008', 'B008'),
+    (9, 'M009', 'B009'),
+    (10, 'M010', 'B010'),
+    (11, 'M001', 'B010'),
+    (12, 'M002', 'B008'),
+    (13, 'M003', 'B009'),
+    (14, 'M004', 'B007'),
+    (15, 'M005', 'B006'),
+    (16, 'M006', 'B005'),
+    (17, 'M007', 'B004'),
+    (18, 'M002', 'B003'),
+    (19, 'M009', 'B001'),
+    (20, 'M010', 'B002');
+
+-- need to modify some dates to 2013 after insertion for query 3
+
+Trigger:
+
+CREATE TRIGGER limit_borrowed_books
+BEFORE INSERT ON Iss_rec
+FOR EACH ROW
+BEGIN
+    DECLARE num_borrowed INT;
+    
+    SELECT COUNT(*) INTO num_borrowed
+    FROM Iss_rec
+    WHERE Mem_no = NEW.Mem_no;
+    
+    IF num_borrowed >= 3 THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Maximum limit of 3 books reached for this student.';
+    END IF;
+END;
+
+***Check  taking more than 3 books
+
+INSERT INTO iss_rec(iss_no,mem_no,book_no)
+VALUES (21, 'M002', 'B009');
+
+
+
+
+SQL-3.(modify some dates to 2013 before SQL)
+
+ SELECT s.Stud_name, b.book_name, b.author FROM Iss_rec i JOIN Membership m ON i.Mem_no = m.Mem_no 
+JOIN Student s ON m.Stud_no = s.Stud_no JOIN Book b ON i.book_no = b.book_no WHERE i.iss_date = '2013-01-01';
+
+
+SQL-4.
+
+ SELECT s.Stud_no, s.Stud_name, b.book_name, b.author 
+FROM Iss_rec i 
+JOIN Membership m ON i.Mem_no = m.Mem_no 
+JOIN Student s ON m.Stud_no = s.Stud_no 
+JOIN Book b ON i.book_no = b.book_no WHERE b.author = 'Tanenbum'; 
+
+SQL-5.
+
+SELECT s.Stud_no, s.Stud_name, COUNT(i.iss_no) AS num_borrowed
+FROM Membership m
+JOIN Student s ON m.Stud_no = s.Stud_no
+JOIN Iss_rec i ON m.Mem_no = i.Mem_no
+GROUP BY s.Stud_no, s.Stud_name
+
+
+SQL-6.
+
+SELECT s.Stud_no, s.Stud_name, COUNT(i.iss_no) AS num_borrowed
+FROM Membership m
+JOIN Student s ON m.Stud_no = s.Stud_no
+JOIN Iss_rec i ON m.Mem_no = i.Mem_no
+GROUP BY s.Stud_no, s.Stud_name
+HAVING COUNT(i.iss_no) = 3;
+
+SQL-7:
+
+SELECT s.Stud_no, s.Stud_name, b.book_no, b.Book_name, b.Author
+FROM Student s
+JOIN Membership m ON s.Stud_no = m.Stud_no
+JOIN Iss_rec i ON m.Mem_no = i.Mem_no
+JOIN Book b ON i.book_no = b.book_no
+WHERE s.Stud_no = 'C033002';
+
+
+SQL-8:
+
+
+SELECT b.book_no, b.Book_name, b.Author, i.iss_date
+FROM Iss_rec i
+JOIN Book b ON i.book_no = b.book_no
+WHERE DATE(i.iss_date) <= CURDATE();
+
+
+

@@ -1,0 +1,88 @@
+CREATE TABLE employee(
+	emp_id int (20) PRIMARY KEY,
+    emp_name varchar(20)
+    );
+
+CREATE TABLE department(
+	dept_id int (20) PRIMARY KEY,
+    dept_name varchar(20)
+    );
+
+CREATE TABLE paydetails(
+	emp_id int (20) ,
+    dept_id int(20) ,
+    basic int(20),
+    deductions int(20),
+    additions int(20),
+    doj date,
+    PRIMARY KEY (emp_id,dept_id)
+    );
+
+CREATE TABLE payroll(
+	emp_id int (20) PRIMARY KEY ,
+    pay_date date,
+    paid_amount numeric(10,2)
+    );
+
+INSERT INTO employee (emp_id, emp_name) VALUES
+(1, 'John Doe'),
+(2, 'Jane Smith'),
+(3, 'Michael Johnson'),
+(4, 'Emily Williams'),
+(5, 'Robert Brown'),
+(6, 'Sarah Lee'),
+(7, 'William Davis'),
+(8, 'Olivia Taylor'),
+(9, 'James Anderson'),
+(10, 'Sophia Martinez');
+
+INSERT INTO department (dept_id, dept_name) VALUES
+(1, 'Sales'),
+(2, 'Marketing'),
+(3, 'Human Resources'),
+(4, 'Finance'),
+(5, 'Operations'),
+(6, 'IT'),
+(7, 'R&D'),
+(8, 'Customer Support'),
+(9, 'GIS'),
+(10, 'Administration');
+
+INSERT INTO paydetails (emp_id, dept_id, basic, deductions, additions, DOJ) VALUES
+(1, 2, 50000, 2000, 5000, '2012-07-01'),
+(2, 3, 45000, 1500, 3000, '2013-06-15'),
+(3, 1, 55000, 2500, 4000, '2014-07-10'),
+(4, 5, 60000, 3000, 3500, '2015-06-28'),
+(5, 9, 48000, 1800, 2000, '2016-07-05'),
+(6, 6, 52000, 2200, 4500, '2017-07-02'),
+(7, 8, 42000, 1200, 2500, '2018-06-20'),
+(8, 9, 58000, 2800, 3200, '2019-06-25'),
+(9, 7, 49000, 1900, 2800, '2020-06-18'),
+(10, 10, 51000, 2100, 5000, '2023-07-15');
+
+INSERT INTO payroll (emp_id, pay_date, paid_amount)
+SELECT pd.emp_id, '2023-07-1', (pd.basic + pd.additions - pd.deductions) AS calculated_paid_amount
+FROM paydetails pd
+LIMIT 10;
+
+SQL-2:
+
+SELECT employee.emp_id,employee.emp_name,department.dept_id,department.dept_name
+FROM employee,department,paydetails
+WHERE employee.emp_id=paydetails.emp_id and paydetails.dept_id=department.dept_id 
+and department.dept_name="GIS";
+
+SQL-3:
+
+SELECT employee.emp_id,employee.emp_name,department.dept_id,department.dept_name,doj as Date_of_Join
+FROM employee,paydetails,department
+WHERE paydetails.doj>"2016-01-01" and 
+employee.emp_id=paydetails.emp_id and department.dept_id=paydetails.dept_id;
+
+SQL-4:
+
+SELECT employee.emp_id,employee.emp_name,department.dept_name,(basic+additions-deductions)as monthly_salary 
+FROM employee,department,paydetails
+WHERE employee.emp_id=paydetails.emp_id AND
+paydetails.dept_id=department.dept_id;
+

@@ -1,0 +1,122 @@
+-- Creating Customer table
+CREATE TABLE Customer (
+    Cust_id INTEGER PRIMARY KEY,
+    cust_name varchar(20) NOT NULL
+);
+
+-- Creating Item table
+CREATE TABLE Item (
+    item_id INTEGER PRIMARY KEY,
+    item_name varchar(20) NOT NULL,
+    Per_item_price INTEGER
+);
+
+-- Creating Sale table
+CREATE TABLE Sale (
+    bill_no INTEGER PRIMARY KEY,
+    bill_date DATE,
+    qty_sold INTEGER,
+    cust_id INTEGER REFERENCES Customer(Cust_id),
+    item_id INTEGER REFERENCES Item(item_id)
+);
+
+-- Creating Relationship table
+CREATE TABLE Relationship (
+    cust_id INTEGER,
+    bill_no INTEGER,
+    item_id INTEGER,
+    FOREIGN KEY (cust_id) REFERENCES Customer (Cust_id),
+    FOREIGN KEY (bill_no) REFERENCES Sale (bill_no),
+    FOREIGN KEY (item_id) REFERENCES Item (item_id),
+    PRIMARY KEY (cust_id, bill_no, item_id)
+);
+
+-- Inserting records into Customer table
+INSERT INTO Customer (Cust_id, cust_name) VALUES
+    (1, 'John Doe'),
+    (2, 'Jane Smith'),
+    (3, 'Michael Johnson'),
+    (4, 'Emily Brown'),
+    (5, 'William Lee'),
+    (6, 'Olivia Clark'),
+    (7, 'James Anderson'),
+    (8, 'Sophia Martinez'),
+    (9, 'Liam Davis'),
+    (10, 'Isabella Scott');
+
+-- Inserting records into Item table
+INSERT INTO Item (item_id, item_name, Per_item_price) VALUES
+    (101, 'Widget', 10),
+    (102, 'Gadget', 20),
+    (103, 'Tool', 15),
+    (104, 'Toy', 8),
+    (105, 'Book', 12),
+    (106, 'Pen', 2),
+    (107, 'Headphones', 30),
+    (108, 'Shirt', 25),
+    (109, 'Hat', 5),
+    (110, 'Sunglasses', 18);
+
+-- Inserting records into Sale table
+INSERT INTO Sale (bill_no, bill_date, qty_sold) VALUES
+    (1001, '2023-07-01', 5),
+    (1002, '2023-07-02', 3),
+    (1003, '2023-07-03', 2),
+    (1004, '2023-07-04', 4),
+    (1005, '2023-07-05', 1),
+    (1006, '2023-07-06', 7),
+    (1007, '2023-07-07', 2),
+    (1008, '2023-07-08', 6),
+    (1009, '2023-07-09', 3),
+    (1010, '2023-07-10', 8);
+
+
+-- Inserting records into Relationship table
+INSERT INTO Relationship (cust_id, bill_no, item_id) VALUES
+    (1, 1001, 101),
+    (2, 1002, 102),
+    (1, 1003, 103),
+    (3, 1004, 104),
+    (2, 1005, 105),
+    (1, 1006, 106),
+    (4, 1007, 107),
+    (5, 1008, 108),
+    (6, 1009, 109),
+    (7, 1010, 110);
+
+
+/////////
+1.Give a count of how many products have been bought by each customer:
+
+SELECT c.cust_name, COUNT(r.item_id) AS total_products_bought
+FROM Customer c
+LEFT JOIN Relationship r ON c.Cust_id = r.cust_id
+GROUP BY c.cust_name;
+
+2.List the total Bill details with the quantity sold, price of the item, and the final amount:
+
+SELECT s.bill_no, s.bill_date, i.item_name, s.qty_sold, i.Per_item_price, s.qty_sold * i.Per_item_price AS final_amount
+FROM Sale s
+JOIN Relationship r ON s.bill_no = r.bill_no
+JOIN Item i ON r.item_id = i.item_id;
+
+3.List the total Bill details with the customer name, quantity sold, and total billable amount:
+
+SELECT c.cust_name, s.qty_sold, i.Per_item_price * s.qty_sold AS total_billable_amount
+FROM Customer c
+JOIN Relationship r ON c.Cust_id = r.cust_id
+JOIN Sale s ON r.bill_no = s.bill_no
+JOIN Item i ON r.item_id = i.item_id;
+
+5. List the total Bill details with the customer name, quantity sold and total billable amount:
+
+SELECT c.cust_name, SUM(s.qty_sold) AS total_quantity_sold,
+       SUM(i.Per_item_price * s.qty_sold) AS total_billable_amount
+FROM Customer c
+JOIN Relationship r ON c.Cust_id = r.cust_id
+JOIN Sale s ON r.bill_no = s.bill_no
+JOIN Item i ON r.item_id = i.item_id
+GROUP BY c.cust_name;
+
+
+
